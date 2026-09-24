@@ -19,6 +19,18 @@ if rg -q 'barMoveSettling|barMoveSettleTimer' "$ROOT/shell/plugins/bar/Bar.qml";
 fi
 pass "bar move outline has no post-release settling state"
 
+# With every monitor unplugged, Qt substitutes a nameless placeholder screen and
+# Hyprland its headless FALLBACK output. A bar built for either is dropped onto
+# whichever monitor returns first, where it stacks over that monitor's own bar.
+if rg -q 'model:\s*Quickshell\.screens' "$ROOT/shell/plugins/bar/Bar.qml"; then
+  fail "bar surfaces must not be built for Qt's placeholder screen"
+fi
+if ! perl -0ne 'exit(/readonly property var realScreens:.*?!screen\.name \|\| screen\.name === "FALLBACK"\) continue.*?screen\.width > 0 && screen\.height > 0/s ? 0 : 1)' \
+  "$ROOT/shell/plugins/bar/Bar.qml"; then
+  fail "bar real-screen filter must skip nameless and FALLBACK screens and require geometry"
+fi
+pass "bar surfaces are built only for real screens"
+
 # A widget above the gesture area propagates its composed press-and-hold down
 # without handing over the grab, so the resulting move gets neither a release
 # nor a cancel and the ghost stays up for the session. Only the grabbing area
