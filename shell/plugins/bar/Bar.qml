@@ -35,24 +35,10 @@ Item {
     property int revision: 0
     function metadataFor(id) { return null }
   }
-  // With every monitor unplugged, Qt substitutes a nameless placeholder screen
-  // and Hyprland its headless FALLBACK output. A bar built for either outlives
-  // the monitors' return: the compositor drops it onto whichever monitor comes
-  // back first, where it stacks over that monitor's own bar until torn down.
-  // The name and geometry reads inside the loop are tracked, so a screen that
-  // arrives before it is named still gets its bar.
-  readonly property var realScreens: {
-    var screens = Quickshell.screens || []
-    var real = []
-
-    for (var i = 0; i < screens.length; i++) {
-      var screen = screens[i]
-      if (!screen || !screen.name || screen.name === "FALLBACK") continue
-      if (screen.width > 0 && screen.height > 0) real.push(screen)
-    }
-
-    return real
-  }
+  // Qt names a screen before adding it, so only its geometry can arrive late;
+  // those reads are tracked and a screen whose size lands afterwards still gets
+  // its bar. BarModel.isRealScreen says which screens are skipped and why.
+  readonly property var realScreens: BarModel.realScreens(Quickshell.screens)
   // Mirrors the on-disk `bar-off` flag so the user can hide the bar without
   // killing the entire shell. Hidden panels stay mapped but park off-screen
   // without an exclusion zone; updated by the FileView watcher further down.
